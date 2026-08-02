@@ -1,35 +1,44 @@
-import type { AlgoMeta, Frame } from "@/lib/sorting";
-
-type AlgorithmInfoCardProps = {
-  algo: AlgoMeta;
-  frame: Frame;
+type Stat = {
+  label: string;
+  value: string | number;
 };
 
-export function AlgorithmInfoCard({ algo, frame }: AlgorithmInfoCardProps) {
+type AlgorithmInfoCardProps = {
+  name: string;
+  blurb: string;
+  time: string;
+  space: string;
+  stats: Stat[];
+};
+
+export function AlgorithmInfoCard({
+  name,
+  blurb,
+  time,
+  space,
+  stats,
+}: AlgorithmInfoCardProps) {
   return (
     <aside className="paper-sheet rounded-xl p-5">
-      <h3 className="heading-slab text-lg">{algo.name}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        {algo.blurb}
-      </p>
+      <h3 className="heading-slab text-lg">{name}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{blurb}</p>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-lg border border-border bg-background/60 p-3">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Time</dt>
-          <dd className="mt-1 font-mono font-bold">{algo.time}</dd>
-        </div>
-        <div className="rounded-lg border border-border bg-background/60 p-3">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Space</dt>
-          <dd className="mt-1 font-mono font-bold">{algo.space}</dd>
-        </div>
-        <div className="rounded-lg border border-border bg-background/60 p-3">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Comparisons</dt>
-          <dd className="mt-1 font-mono font-bold">{frame.comparisons}</dd>
-        </div>
-        <div className="rounded-lg border border-border bg-background/60 p-3">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Swaps</dt>
-          <dd className="mt-1 font-mono font-bold">{frame.swaps}</dd>
-        </div>
+        {[
+          { label: "Time", value: time },
+          { label: "Space", value: space },
+          ...stats,
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-lg border border-border bg-background/60 p-3"
+          >
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+              {stat.label}
+            </dt>
+            <dd className="mt-1 font-mono font-bold">{stat.value}</dd>
+          </div>
+        ))}
       </dl>
     </aside>
   );

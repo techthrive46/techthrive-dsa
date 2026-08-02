@@ -62,11 +62,15 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
         ) : (
           <VisualizerCanvas frame={player.currentFrame} />
         )}
-        <PseudocodePanel algo={algo} frame={player.currentFrame} />
+        <PseudocodePanel
+          pseudocode={algo.pseudocode}
+          line={player.currentFrame.line}
+        />
       </div>
 
       <FrameCaption
-        frame={player.currentFrame}
+        caption={player.currentFrame.caption}
+        note={player.currentFrame.note}
         frameIndex={player.currentIndex}
         totalFrames={player.totalFrames}
       />
@@ -87,7 +91,16 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
         onSetArray={player.setArray}
       />
 
-      <AlgorithmInfoCard algo={algo} frame={player.currentFrame} />
+      <AlgorithmInfoCard
+        name={algo.name}
+        blurb={algo.blurb}
+        time={algo.time}
+        space={algo.space}
+        stats={[
+          { label: "Comparisons", value: player.currentFrame.comparisons },
+          { label: "Swaps", value: player.currentFrame.swaps },
+        ]}
+      />
     </main>
   );
 }

@@ -13,5 +13,6 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## What's included
 
-- **Sorting visualizer** — Bubble, Selection, Insertion, Merge, and Quick Sort with play/pause, step controls, speed, and syncing pseudocode
-- Home page with live bubble-sort preview and topic roadmap (searching, pathfinding, trees, recursion, stacks & queues coming soon)
+- **Sorting visualizer** — Bubble, Selection, Insertion, Merge, and Quick Sort with play/pause, step controls, speed, and syncing pseudocode. Merge Sort animates as a textbook recursion tree
+- **Searching visualizer** — Linear and Binary Search with a movable pointer, a shrinking `lo…hi` window, ruled-out cells, and a target you choose
+- Home page with live bubble-sort preview and topic roadmap (pathfinding, trees, recursion, stacks & queues coming soon)

@@ -33,6 +33,7 @@ const topics = [
     title: "Searching",
     desc: "Linear and binary search on a shrinking window.",
     count: "2 algorithms",
+    to: "/searching" as const,
   },
   {
     icon: Network,

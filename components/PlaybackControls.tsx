@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Pause, Play, Shuffle, SkipBack, SkipForward, RotateCcw } from "lucide-react";
 
 type PlaybackControlsProps = {
@@ -17,6 +17,10 @@ type PlaybackControlsProps = {
   onSpeedChange: (speed: number) => void;
   onRandomize: () => void;
   onSetArray: (array: number[]) => void;
+  defaultArrayText?: string;
+  /** Extra controls (e.g. a search target) shown under the custom array row. */
+  children?: ReactNode;
+  hint?: string;
 };
 
 const MIN_SIZE = 3;
@@ -65,8 +69,11 @@ export function PlaybackControls({
   onSpeedChange,
   onRandomize,
   onSetArray,
+  defaultArrayText = "8, 3, 11, 6, 1, 9, 4, 7",
+  children,
+  hint,
 }: PlaybackControlsProps) {
-  const [customInput, setCustomInput] = useState("8, 3, 11, 6, 1, 9, 4, 7");
+  const [customInput, setCustomInput] = useState(defaultArrayText);
   const [error, setError] = useState<string | null>(null);
 
   const handleApplyCustom = () => {
@@ -182,8 +189,12 @@ export function PlaybackControls({
         </button>
       </div>
       {error ? <p className="text-sm font-bold text-destructive">{error}</p> : null}
+
+      {children}
+
       <p className="font-mono text-xs text-muted-foreground">
-        {MIN_SIZE}–{MAX_SIZE} integers between {MIN_VALUE} and {MAX_VALUE}.
+        {hint ??
+          `${MIN_SIZE}–${MAX_SIZE} integers between ${MIN_VALUE} and ${MAX_VALUE}.`}
       </p>
     </div>
   );

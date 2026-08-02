@@ -11,6 +11,9 @@ export function SiteNav() {
           <Link href="/sorting" className="transition-colors hover:text-primary">
             Sorting
           </Link>
+          <Link href="/searching" className="transition-colors hover:text-primary">
+            Searching
+          </Link>
           <Link href="/#topics" className="transition-colors hover:text-primary">
             Topics
           </Link>
