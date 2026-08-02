@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-bar: var(--bar);
+  --color-bar-compare: var(--bar-compare);
+  --color-bar-swap: var(--bar-swap);
+  --color-bar-sorted: var(--bar-sorted);
+  --color-bar-pivot: var(--bar-pivot);
+  --color-grid-line: var(--grid-line);
+  --color-ink: var(--ink);
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-caveat), cursive;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.945 0.055 96);
+  --foreground: oklch(0.16 0.01 90);
+  --ink: oklch(0.16 0.01 90);
+  --card: oklch(0.972 0.035 96);
+  --card-foreground: oklch(0.16 0.01 90);
+  --popover: oklch(0.972 0.035 96);
+  --popover-foreground: oklch(0.16 0.01 90);
+  --primary: oklch(0.6 0.208 265);
+  --primary-foreground: oklch(0.99 0.01 96);
+  --secondary: oklch(0.9 0.05 96);
+  --secondary-foreground: oklch(0.16 0.01 90);
+  --muted: oklch(0.91 0.045 96);
+  --muted-foreground: oklch(0.44 0.02 90);
+  --accent: oklch(0.88 0.06 96);
+  --accent-foreground: oklch(0.16 0.01 90);
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.99 0.01 96);
+  --border: oklch(0.78 0.04 96);
+  --input: oklch(0.78 0.04 96);
+  --ring: oklch(0.6 0.208 265);
+  --grid-line: oklch(0.86 0.05 160);
+  --bar: oklch(0.6 0.208 265);
+  --bar-compare: oklch(0.78 0.16 78);
+  --bar-swap: oklch(0.6 0.22 27);
+  --bar-sorted: oklch(0.62 0.16 150);
+  --bar-pivot: oklch(0.55 0.2 310);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+}
+
+@utility paper {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+@utility paper-sheet {
+  background-color: var(--card);
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 28px 28px;
+  border: 1px solid var(--border);
+  box-shadow: 6px 6px 0 0 color-mix(in oklab, var(--ink) 12%, transparent);
+}
+
+@utility heading-slab {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.02em;
+}
+
+@utility script-note {
+  font-family: var(--font-script);
+  font-weight: 600;
+}
+
+@utility marker-underline {
+  background-image: linear-gradient(
+    to top,
+    color-mix(in oklab, var(--bar-compare) 70%, transparent) 0 38%,
+    transparent 38%
+  );
+  padding-inline: 0.15em;
+}
+
+@utility tape {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    top: -0.7rem;
+    left: 50%;
+    width: 5.5rem;
+    height: 1.4rem;
+    transform: translateX(-50%) rotate(-2.5deg);
+    background: color-mix(in oklab, var(--bar-compare) 40%, transparent);
+    border: 1px dashed color-mix(in oklab, var(--ink) 18%, transparent);
+  }
+}
+
+@utility ink-lift {
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+  &:hover {
+    transform: translate(-2px, -3px);
+    box-shadow: 10px 12px 0 0 color-mix(in oklab, var(--ink) 16%, transparent);
+  }
+}
