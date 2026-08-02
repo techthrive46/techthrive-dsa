@@ -20,7 +20,7 @@ export function VisualizerCanvas({ frame }: VisualizerCanvasProps) {
 
   return (
     <div className="paper-sheet rounded-xl p-5 sm:p-6">
-      <div className="relative h-64 border-b border-l border-foreground/60 sm:h-80">
+      <div className="relative h-64 sm:h-80">
         <div className="absolute inset-0 flex items-end justify-around gap-2 px-1 pb-6 sm:gap-3 sm:px-2">
           {frame.array.map((item, index) => (
             <div

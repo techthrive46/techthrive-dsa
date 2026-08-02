@@ -189,25 +189,46 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
     const n = a.length;
     sorted.add(0);
     for (let i = 1; i < n; i++) {
-      const key = a[i]!;
-      push({ comparing: [i], caption: `Take ${key.value} as the key`, note: "insert into sorted part", line: 1 });
-      let j = i - 1;
-      while (j >= 0 && a[j]!.value > key.value) {
+      const keyVal = a[i]!.value;
+      push({
+        comparing: [i],
+        caption: `Take ${keyVal} as the key`,
+        note: "insert into sorted part",
+        line: 1,
+      });
+      // Adjacent swaps keep unique item ids for layout animation (unlike
+      // a[j+1] = a[j] shifts, which duplicate references mid-pass).
+      let j = i;
+      while (j > 0) {
         comparisons++;
+        const left = a[j - 1]!.value;
+        const right = a[j]!.value;
         push({
-          comparing: [j, j + 1],
-          caption: `${a[j]!.value} > ${key.value}`,
-          note: "shift right",
+          comparing: [j - 1, j],
+          caption: `Compare ${left} and ${right}`,
+          note: left > right ? "shift key left" : "key found its place",
+          line: 3,
+        });
+        if (left <= right) break;
+        const tmp = a[j - 1]!;
+        a[j - 1] = a[j]!;
+        a[j] = tmp;
+        swaps++;
+        push({
+          swapping: [j - 1, j],
+          caption: `Shift ${keyVal} left`,
+          note: "swap with neighbour",
           line: 4,
         });
-        a[j + 1] = a[j]!;
-        swaps++;
         j--;
       }
-      if (j >= 0) comparisons++;
-      a[j + 1] = key;
       sorted.add(i);
-      push({ swapping: [j + 1], caption: `Insert ${key.value} at index ${j + 1}`, note: "prefix sorted", line: 5 });
+      push({
+        swapping: [j],
+        caption: `Insert ${keyVal} at index ${j}`,
+        note: "prefix sorted",
+        line: 5,
+      });
     }
   }
 

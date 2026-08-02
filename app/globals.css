@@ -90,10 +90,6 @@
 
 @utility paper-sheet {
   background-color: var(--card);
-  background-image:
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: 28px 28px;
   border: 1px solid var(--border);
   box-shadow: 6px 6px 0 0 color-mix(in oklab, var(--ink) 12%, transparent);
 }

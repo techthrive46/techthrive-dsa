@@ -29,7 +29,7 @@ export function HeroDemo() {
         </span>
       </div>
 
-      <div className="relative mt-4 h-44 border-b border-l border-foreground/60">
+      <div className="relative mt-4 h-44">
         {frame.array.map((item, idx) => {
           const state = frame.swapping.includes(idx)
             ? "var(--bar-swap)"
