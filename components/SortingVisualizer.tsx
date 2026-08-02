@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ALGOS, type AlgoKey } from "@/lib/sorting";
 import { usePlayer } from "@/hooks/usePlayer";
 import { VisualizerCanvas } from "@/components/VisualizerCanvas";
+import { MergeTreeCanvas } from "@/components/MergeTreeCanvas";
 import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { PlaybackControls } from "@/components/PlaybackControls";
@@ -20,6 +21,7 @@ export function SortingVisualizer({ algoKey }: SortingVisualizerProps) {
 function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
   const algo = ALGOS[algoKey];
   const player = usePlayer({ algo: algoKey });
+  const tree = player.currentFrame.tree;
 
   return (
     <main className="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-5 py-10">
@@ -34,16 +36,32 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
           <h1 className="heading-slab mt-1 text-3xl sm:text-4xl">{algo.name}</h1>
         </div>
         <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
-          <Legend color="var(--bar)" label="Default" />
-          <Legend color="var(--bar-compare)" label="Comparing" />
-          <Legend color="var(--bar-swap)" label="Swapping" />
-          <Legend color="var(--bar-pivot)" label="Pivot" />
-          <Legend color="var(--bar-sorted)" label="Sorted" />
+          {tree ? (
+            <>
+              <Legend color="var(--bar-compare)" label="Splitting" />
+              <Legend color="var(--bar-swap)" label="Merging" />
+              <Legend color="var(--bar-sorted)" label="Sorted run" />
+            </>
+          ) : (
+            <>
+              <Legend color="var(--bar)" label="Default" />
+              <Legend color="var(--bar-compare)" label="Comparing" />
+              <Legend color="var(--bar-swap)" label="Swapping" />
+              <Legend color="var(--bar-pivot)" label="Pivot" />
+              <Legend color="var(--bar-sorted)" label="Sorted" />
+            </>
+          )}
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <VisualizerCanvas frame={player.currentFrame} />
+      <div
+        className={`grid gap-6 ${tree ? "lg:grid-cols-[2fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}
+      >
+        {tree ? (
+          <MergeTreeCanvas tree={tree} />
+        ) : (
+          <VisualizerCanvas frame={player.currentFrame} />
+        )}
         <PseudocodePanel algo={algo} frame={player.currentFrame} />
       </div>
 

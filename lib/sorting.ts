@@ -9,6 +9,26 @@ export type Frame = {
   line: number;
   comparisons: number;
   swaps: number;
+  tree: MergeTree | null;
+};
+
+export type MergeNodeStatus = "hidden" | "idle" | "splitting" | "merging" | "merged";
+
+export type MergeTreeNode = {
+  id: string;
+  lo: number;
+  hi: number;
+  depth: number;
+  parentId: string | null;
+  /** Values held by this sub-array; `null` marks a slot still waiting to be merged. */
+  slots: (number | null)[];
+  status: MergeNodeStatus;
+};
+
+export type MergeTree = {
+  nodes: MergeTreeNode[];
+  maxDepth: number;
+  leaves: number;
 };
 
 export type Item = { id: number; value: number };
@@ -106,12 +126,62 @@ function clone(a: Item[]): Item[] {
   return a.map((x) => ({ ...x }));
 }
 
+type MergeTreeState = {
+  node: (lo: number, hi: number) => MergeTreeNode;
+  /** Hides everything below [lo…hi] once that range is merged. */
+  collapse: (lo: number, hi: number) => void;
+  snapshot: () => MergeTree;
+};
+
+/** Pre-builds every node of the merge-sort recursion tree; all but the root start hidden. */
+function createMergeTree(values: number[]): MergeTreeState {
+  const nodes = new Map<string, MergeTreeNode>();
+  let maxDepth = 0;
+
+  const add = (lo: number, hi: number, depth: number, parentId: string | null) => {
+    const id = `${lo}-${hi}`;
+    maxDepth = Math.max(maxDepth, depth);
+    nodes.set(id, {
+      id,
+      lo,
+      hi,
+      depth,
+      parentId,
+      slots: values.slice(lo, hi + 1),
+      status: depth === 0 ? "idle" : "hidden",
+    });
+    if (lo >= hi) return;
+    const mid = Math.floor((lo + hi) / 2);
+    add(lo, mid, depth + 1, id);
+    add(mid + 1, hi, depth + 1, id);
+  };
+
+  add(0, values.length - 1, 0, null);
+
+  return {
+    node: (lo, hi) => nodes.get(`${lo}-${hi}`)!,
+    collapse: (lo, hi) => {
+      for (const node of nodes.values()) {
+        const isDescendant =
+          node.lo >= lo && node.hi <= hi && !(node.lo === lo && node.hi === hi);
+        if (isDescendant) node.status = "hidden";
+      }
+    },
+    snapshot: () => ({
+      maxDepth,
+      leaves: values.length,
+      nodes: [...nodes.values()].map((n) => ({ ...n, slots: [...n.slots] })),
+    }),
+  };
+}
+
 export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
   const a: Item[] = input.map((value, i) => ({ id: i, value }));
   const frames: Frame[] = [];
   let comparisons = 0;
   let swaps = 0;
   const sorted = new Set<number>();
+  const tree = algo === "merge" ? createMergeTree(input) : null;
 
   const push = (p: Partial<Frame> & { caption: string; note: string; line: number }) => {
     frames.push({
@@ -123,6 +193,7 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
       sorted: [...sorted],
       comparisons,
       swaps,
+      tree: tree ? tree.snapshot() : null,
     });
   };
 
@@ -232,42 +303,96 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
     }
   }
 
-  if (algo === "merge") {
+  if (algo === "merge" && tree) {
     const mergeSort = (lo: number, hi: number) => {
-      if (lo >= hi) return;
+      const node = tree.node(lo, hi);
+
+      if (lo >= hi) {
+        node.status = "merged";
+        push({
+          comparing: [lo],
+          caption: `[${a[lo]!.value}] is a single element`,
+          note: "already sorted",
+          line: 1,
+        });
+        return;
+      }
+
       const mid = Math.floor((lo + hi) / 2);
+      const leftNode = tree.node(lo, mid);
+      const rightNode = tree.node(mid + 1, hi);
+      node.status = "splitting";
+      leftNode.status = "idle";
+      leftNode.slots = a.slice(lo, mid + 1).map((item) => item.value);
+      rightNode.status = "idle";
+      rightNode.slots = a.slice(mid + 1, hi + 1).map((item) => item.value);
       push({
         comparing: range(lo, hi),
-        caption: `Split [${lo}…${hi}]`,
+        caption: `Split [${lo}…${hi}] at ${mid}`,
         note: "divide",
         line: 2,
       });
+
       mergeSort(lo, mid);
       mergeSort(mid + 1, hi);
+
       const left = a.slice(lo, mid + 1);
       const right = a.slice(mid + 1, hi + 1);
+      const merged: Item[] = [];
       let i = 0;
       let j = 0;
-      let k = lo;
+      node.status = "merging";
+      node.slots = new Array<number | null>(hi - lo + 1).fill(null);
+      push({
+        comparing: range(lo, hi),
+        caption: `Merge [${lo}…${mid}] with [${mid + 1}…${hi}]`,
+        note: "conquer",
+        line: 4,
+      });
+
+      // Values land in the tree node first; the array itself is rewritten once the
+      // whole run is merged, so a frame never holds the same item twice.
+      const take = (item: Item) => {
+        node.slots[merged.length] = item.value;
+        merged.push(item);
+        swaps++;
+      };
+
       while (i < left.length && j < right.length) {
         comparisons++;
         const lv = left[i]!.value;
         const rv = right[j]!.value;
+        const fromLeft = lv <= rv;
+        take(fromLeft ? left[i++]! : right[j++]!);
         push({
-          comparing: [k],
-          caption: `Merge: compare ${lv} and ${rv}`,
-          note: lv <= rv ? "take left" : "take right",
+          comparing: [lo + merged.length - 1],
+          caption: `Compare ${lv} and ${rv} — take ${fromLeft ? lv : rv}`,
+          note: fromLeft ? "left half wins" : "right half wins",
           line: 4,
         });
-        a[k++] = lv <= rv ? left[i++]! : right[j++]!;
-        swaps++;
       }
-      while (i < left.length) a[k++] = left[i++]!;
-      while (j < right.length) a[k++] = right[j++]!;
+
+      if (i < left.length || j < right.length) {
+        const rest = i < left.length ? left.slice(i) : right.slice(j);
+        while (i < left.length) take(left[i++]!);
+        while (j < right.length) take(right[j++]!);
+        push({
+          comparing: range(lo + merged.length - rest.length, lo + merged.length - 1),
+          caption: `Copy remaining ${rest.map((item) => item.value).join(", ")}`,
+          note: "one half is empty",
+          line: 4,
+        });
+      }
+
+      merged.forEach((item, offset) => {
+        a[lo + offset] = item;
+      });
+      node.status = "merged";
+      tree.collapse(lo, hi);
       push({
         swapping: range(lo, hi),
         caption: `Merged [${lo}…${hi}]`,
-        note: "sorted run",
+        note: "halves folded in",
         line: 5,
       });
     };
