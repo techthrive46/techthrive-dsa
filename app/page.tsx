@@ -24,15 +24,15 @@ const topics = [
   {
     icon: BarChart3,
     title: "Sorting",
-    desc: "Bubble, selection, insertion, merge and quick sort — bar by bar.",
-    count: "5 algorithms",
+    desc: "Bubble, selection, insertion, merge, quick, heap, shell, counting, radix, bucket, cocktail, and gnome sort — bar by bar.",
+    count: "12 algorithms",
     to: "/sorting" as const,
   },
   {
     icon: Search,
     title: "Searching",
-    desc: "Linear and binary search on a shrinking window.",
-    count: "2 algorithms",
+    desc: "Linear, binary, jump, interpolation, exponential, and ternary search.",
+    count: "6 algorithms",
     to: "/searching" as const,
   },
   {

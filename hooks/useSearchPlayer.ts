@@ -15,6 +15,10 @@ import { useFramePlayer } from "@/hooks/useFramePlayer";
 const DEFAULTS: Record<SearchAlgoKey, { array: number[]; target: number }> = {
   linear: { array: [7, 2, 14, 9, 4, 18, 11, 5], target: 18 },
   binary: { array: [2, 4, 6, 9, 12, 15, 18, 20], target: 15 },
+  jump: { array: [2, 4, 6, 9, 12, 15, 18, 20], target: 18 },
+  interpolation: { array: [2, 4, 6, 8, 10, 12, 14, 16], target: 12 },
+  exponential: { array: [2, 4, 6, 9, 12, 15, 18, 20], target: 18 },
+  ternary: { array: [2, 4, 6, 9, 12, 15, 18, 20], target: 12 },
 };
 
 type UseSearchPlayerOptions = {
