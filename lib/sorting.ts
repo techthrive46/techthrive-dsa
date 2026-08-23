@@ -164,15 +164,15 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Shell Sort",
     time: "O(n¹.⁵) avg",
     space: "O(1)",
-    blurb: "Insertion sort variant that compares elements separated by a gap, shrinking the gap over time.",
+    blurb: "Generalization of insertion sort that compares elements separated by a gap h (halving down to 1), moving items across long distances fast.",
     pseudocode: [
-      "for gap = floor(n/2) down to 1",
-      "  for i = gap to n-1",
-      "    temp = a[i]",
-      "    j = i",
-      "    while j >= gap and a[j-gap] > temp",
-      "      a[j] = a[j-gap]; j -= gap",
-      "    a[j] = temp",
+      "shellSort(a):",
+      "  for gap = floor(n/2) down to 1 (gap /= 2):",
+      "    for i = gap to n-1:",
+      "      j = i",
+      "      while j >= gap and a[j-gap] > a[j]:",
+      "        swap a[j-gap], a[j]",
+      "        j = j - gap // step backward by gap",
     ],
   },
   counting: {
@@ -218,13 +218,17 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Cocktail Shaker Sort",
     time: "O(n²)",
     space: "O(1)",
-    blurb: "Bi-directional variation of bubble sort that passes left-to-right then right-to-left.",
+    blurb: "Bi-directional variation of bubble sort that passes left-to-right (bubbling max to end) then right-to-left (sinking min to start).",
     pseudocode: [
-      "while swapped",
-      "  for i from start to end-1 (left to right)",
-      "    if a[i] > a[i+1] swap",
-      "  for i from end-1 down to start (right to left)",
-      "    if a[i] > a[i+1] swap",
+      "cocktailSort(a):",
+      "  start = 0; end = n - 1; swapped = true",
+      "  while swapped:",
+      "    // Pass 1 (L->R): bubble largest value to end",
+      "    for i = start to end-1: if a[i] > a[i+1] swap",
+      "    end-- // lock rightmost element",
+      "    // Pass 2 (R->L): sink smallest value to start",
+      "    for i = end-1 down to start: if a[i] > a[i+1] swap",
+      "    start++ // lock leftmost element",
     ],
   },
   gnome: {
@@ -684,25 +688,26 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
     for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
       push({
         gap,
-        caption: `Shell sort gap = ${gap}`,
-        note: `compare elements separated by gap ${gap}`,
-        line: 0,
+        caption: `Shell sort gap = ${gap}: Compare elements separated by ${gap} positions`,
+        note: `starting pass for gap ${gap}`,
+        line: 1,
       });
 
       for (let i = gap; i < n; i++) {
-        const temp = a[i]!;
         let j = i;
 
         while (j >= gap) {
           comparisons++;
-          const leftVal = a[j - gap]!.value;
-          const rightVal = a[j]!.value;
+          const leftIdx = j - gap;
+          const rightIdx = j;
+          const leftVal = a[leftIdx]!.value;
+          const rightVal = a[rightIdx]!.value;
 
           push({
             gap,
-            comparing: [j - gap, j],
-            caption: `Gap comparison (gap=${gap}): ${leftVal} vs ${rightVal}`,
-            note: leftVal > rightVal ? `swap elements at gap ${gap}` : "in correct gap order",
+            comparing: [leftIdx, rightIdx],
+            caption: `Gap comparison (gap=${gap}): Compare a[${leftIdx}] (${leftVal}) and a[${rightIdx}] (${rightVal})`,
+            note: leftVal > rightVal ? `${leftVal} > ${rightVal} → swap across gap ${gap}` : "in order",
             line: 4,
           });
 
@@ -712,6 +717,15 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
           a[j] = a[j - gap]!;
           a[j - gap] = tmp;
           swaps++;
+
+          push({
+            gap,
+            swapping: [leftIdx, rightIdx],
+            caption: `Swap a[${leftIdx}] (${leftVal}) and a[${rightIdx}] (${rightVal}) across gap ${gap}`,
+            note: `item ${leftVal} moved ${gap} positions right`,
+            line: 5,
+          });
+
           j -= gap;
         }
       }
@@ -777,18 +791,19 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
         line: 1,
       });
 
-      const buckets: Item[][] = Array.from({ length: 10 }, () => []);
+      const buckets: number[][] = Array.from({ length: 10 }, () => []);
       for (let i = 0; i < n; i++) {
-        const digit = Math.floor(a[i]!.value / exp) % 10;
-        buckets[digit]!.push(a[i]!);
+        const val = a[i]!.value;
+        const digit = Math.floor(val / exp) % 10;
+        buckets[digit]!.push(val);
         push({
           digitPlace: exp,
           comparing: [i],
           buckets: buckets.map((b, d) => ({
             label: `Digit ${d}`,
-            values: b.map((x) => x.value),
+            values: [...b],
           })),
-          caption: `Element ${a[i]!.value} has digit ${digit} at place ${exp}`,
+          caption: `Element ${val} has digit ${digit} at place ${exp}`,
           note: `placed in bucket ${digit}`,
           line: 2,
         });
@@ -796,17 +811,17 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
 
       let idx = 0;
       for (let d = 0; d < 10; d++) {
-        for (const item of buckets[d]!) {
-          a[idx] = item;
+        for (const val of buckets[d]!) {
+          a[idx]!.value = val;
           swaps++;
           push({
             digitPlace: exp,
             swapping: [idx],
             buckets: buckets.map((b, bIdx) => ({
               label: `Digit ${bIdx}`,
-              values: b.map((x) => x.value),
+              values: [...b],
             })),
-            caption: `Gather bucket ${d}: place ${item.value} at index ${idx}`,
+            caption: `Gather bucket ${d}: place ${val} at index ${idx}`,
             note: "rebuilding from buckets",
             line: 2,
           });
@@ -821,7 +836,7 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
     const n = a.length;
     const maxVal = Math.max(...a.map((x) => x.value)) || 1;
     const bucketCount = 3;
-    const buckets: Item[][] = Array.from({ length: bucketCount }, () => []);
+    const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
 
     push({
       caption: `Scatter ${n} elements into ${bucketCount} buckets`,
@@ -830,18 +845,19 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
     });
 
     for (let i = 0; i < n; i++) {
+      const val = a[i]!.value;
       const bIdx = Math.min(
         bucketCount - 1,
-        Math.floor((a[i]!.value / (maxVal + 1)) * bucketCount),
+        Math.floor((val / (maxVal + 1)) * bucketCount),
       );
-      buckets[bIdx]!.push(a[i]!);
+      buckets[bIdx]!.push(val);
       push({
         comparing: [i],
         buckets: buckets.map((b, idx) => ({
           label: `Bucket ${idx + 1}`,
-          values: b.map((x) => x.value),
+          values: [...b],
         })),
-        caption: `Value ${a[i]!.value} -> Bucket ${bIdx + 1}`,
+        caption: `Value ${val} -> Bucket ${bIdx + 1}`,
         note: `scatter stage`,
         line: 1,
       });
@@ -849,18 +865,18 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
 
     let writeIdx = 0;
     for (let b = 0; b < bucketCount; b++) {
-      buckets[b]!.sort((x, y) => x.value - y.value);
-      for (const item of buckets[b]!) {
-        a[writeIdx] = item;
+      buckets[b]!.sort((x, y) => x - y);
+      for (const val of buckets[b]!) {
+        a[writeIdx]!.value = val;
         swaps++;
         sorted.add(writeIdx);
         push({
           swapping: [writeIdx],
           buckets: buckets.map((bItems, idx) => ({
             label: `Bucket ${idx + 1}`,
-            values: bItems.map((x) => x.value),
+            values: [...bItems],
           })),
-          caption: `Gather from Bucket ${b + 1}: place ${item.value} at index ${writeIdx}`,
+          caption: `Gather from Bucket ${b + 1}: place ${val} at index ${writeIdx}`,
           note: "gather stage",
           line: 3,
         });
@@ -884,9 +900,9 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
         push({
           direction: "forward",
           comparing: [i, i + 1],
-          caption: `Forward pass (L->R): compare ${x} and ${y}`,
-          note: x > y ? "swap" : "stay",
-          line: 2,
+          caption: `Forward pass (L->R): compare ${x} and ${y} — bubbling max right`,
+          note: x > y ? `${x} > ${y} → swap` : "in order",
+          line: 4,
         });
         if (x > y) {
           const tmp = a[i]!;
@@ -894,12 +910,24 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
           a[i + 1] = tmp;
           swaps++;
           swapped = true;
-          push({ direction: "forward", swapping: [i, i + 1], caption: `Swap ${x} and ${y}`, note: "forward swap", line: 2 });
+          push({
+            direction: "forward",
+            swapping: [i, i + 1],
+            caption: `Swap ${x} and ${y} (bubbling larger element right)`,
+            note: "forward swap",
+            line: 4,
+          });
         }
       }
 
       if (!swapped) break;
       sorted.add(end);
+      push({
+        direction: "forward",
+        caption: `Lock rightmost element ${a[end]!.value} at index ${end}`,
+        note: "end boundary decreased",
+        line: 5,
+      });
       end--;
       swapped = false;
 
@@ -910,9 +938,9 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
         push({
           direction: "backward",
           comparing: [i, i + 1],
-          caption: `Backward pass (R->L): compare ${x} and ${y}`,
-          note: x > y ? "swap" : "stay",
-          line: 4,
+          caption: `Backward pass (R->L): compare ${x} and ${y} — sinking min left`,
+          note: x > y ? `${x} > ${y} → swap` : "in order",
+          line: 7,
         });
         if (x > y) {
           const tmp = a[i]!;
@@ -920,10 +948,22 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
           a[i + 1] = tmp;
           swaps++;
           swapped = true;
-          push({ direction: "backward", swapping: [i, i + 1], caption: `Swap ${x} and ${y}`, note: "backward swap", line: 4 });
+          push({
+            direction: "backward",
+            swapping: [i, i + 1],
+            caption: `Swap ${x} and ${y} (sinking smaller element left)`,
+            note: "backward swap",
+            line: 7,
+          });
         }
       }
       sorted.add(start);
+      push({
+        direction: "backward",
+        caption: `Lock leftmost element ${a[start]!.value} at index ${start}`,
+        note: "start boundary increased",
+        line: 8,
+      });
       start++;
     }
     for (let i = 0; i < a.length; i++) sorted.add(i);

@@ -93,6 +93,28 @@ export function VisualizerCanvas({ frame }: VisualizerCanvasProps) {
         </div>
 
         <div className="relative h-56 sm:h-64">
+          {/* Shell Sort SVG Gap Arc Overlay */}
+          {gap !== null && gap !== undefined && (frame.comparing.length === 2 || frame.swapping.length === 2) && (
+            <svg className="absolute inset-0 size-full pointer-events-none overflow-visible z-10" style={{ strokeWidth: 2 }}>
+              {(() => {
+                const activePair = frame.swapping.length === 2 ? frame.swapping : frame.comparing;
+                const [i1, i2] = activePair.sort((a, b) => a - b);
+                const n = frame.array.length;
+                const x1 = ((i1 + 0.5) / n) * 100;
+                const x2 = ((i2 + 0.5) / n) * 100;
+                return (
+                  <path
+                    d={`M ${x1}% 120 Q ${(x1 + x2) / 2}% 20 ${x2}% 120`}
+                    fill="none"
+                    stroke={frame.swapping.length === 2 ? "var(--bar-swap)" : "var(--bar-compare)"}
+                    strokeWidth="3"
+                    strokeDasharray="6 3"
+                  />
+                );
+              })()}
+            </svg>
+          )}
+
           <div className="absolute inset-0 flex items-end justify-around gap-2 px-1 pb-6 sm:gap-3 sm:px-2">
             {frame.array.map((item, index) => {
               const isMin = minPointer === index;
@@ -102,7 +124,7 @@ export function VisualizerCanvas({ frame }: VisualizerCanvasProps) {
 
               return (
                 <div
-                  key={item.id}
+                  key={`${item.id}-${index}`}
                   className="flex h-full flex-1 flex-col items-center justify-end"
                 >
                   {/* Floating Pointer Tag */}
@@ -146,6 +168,84 @@ export function VisualizerCanvas({ frame }: VisualizerCanvasProps) {
           </div>
         </div>
       </div>
+
+      {/* Cocktail Shaker Directional Pass Visualizer */}
+      {direction && (
+        <div className="border-t border-dashed border-border pt-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              Cocktail Shaker Pass Direction
+            </h4>
+            <span className="text-xs text-muted-foreground">
+              Alternates left-to-right & right-to-left
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center rounded-md px-2.5 py-1 font-mono text-xs font-bold text-white ${direction === "forward" ? "bg-emerald-600" : "bg-blue-600"}`}>
+                {direction === "forward" ? "Pass 1: Left → Right ➡️" : "Pass 2: Right → Left ⬅️"}
+              </span>
+              <span className="text-xs font-bold text-foreground">
+                {direction === "forward"
+                  ? "Bubbling largest element right to the end"
+                  : "Sinking smallest element left to the start"}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Turtles (small values near the end) move left fast in backward passes!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Shell Sort Gap Sub-sequences Visualizer */}
+      {gap !== null && gap !== undefined && (
+        <div className="border-t border-dashed border-border pt-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
+              Shell Sort Gap Sub-Sequences <span className="font-sans normal-case text-muted-foreground">(gap = {gap})</span>
+            </h4>
+            <span className="text-xs text-muted-foreground">
+              {gap > 1 ? `Elements ${gap} steps apart are sorted together` : "Final pass (gap = 1): Standard insertion sort on nearly-sorted data"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: gap }, (_, trackIdx) => {
+              const trackIndices: number[] = [];
+              for (let idx = trackIdx; idx < frame.array.length; idx += gap) {
+                trackIndices.push(idx);
+              }
+              return (
+                <div key={trackIdx} className="flex flex-col gap-1 rounded-lg border border-purple-500/20 bg-purple-500/5 p-2.5">
+                  <span className="font-mono text-[11px] font-bold text-purple-600 dark:text-purple-300">
+                    Gap Track {trackIdx + 1}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {trackIndices.map((idx) => {
+                      const item = frame.array[idx]!;
+                      const isActive = frame.comparing.includes(idx) || frame.swapping.includes(idx);
+                      return (
+                        <span
+                          key={idx}
+                          className={`inline-flex items-center rounded px-2 py-0.5 font-mono text-xs font-bold transition-all ${
+                            isActive
+                              ? "bg-purple-500 text-white shadow-sm scale-105"
+                              : "bg-card border border-border text-foreground"
+                          }`}
+                        >
+                          a[{idx}] = {item.value}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Auxiliary Counting Array Visualizer */}
       {counts && counts.length > 0 && (
@@ -300,7 +400,7 @@ export function VisualizerCanvas({ frame }: VisualizerCanvasProps) {
 
                 return (
                   <motion.div
-                    key={item.id}
+                    key={`${item.id}-${i}`}
                     layout
                     transition={{ type: "spring", stiffness: 350, damping: 25 }}
                     style={{
