@@ -59,6 +59,7 @@ const topics = [
     title: "Stacks & Queues",
     desc: "Push, pop, enqueue and dequeue in motion.",
     count: "2 structures",
+    to: "/stacks-queues" as const,
   },
 ];
 
