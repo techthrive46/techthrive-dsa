@@ -5,6 +5,7 @@ import { ALGOS, type AlgoKey } from "@/lib/sorting";
 import { usePlayer } from "@/hooks/usePlayer";
 import { VisualizerCanvas } from "@/components/VisualizerCanvas";
 import { MergeTreeCanvas } from "@/components/MergeTreeCanvas";
+import { QuickTreeCanvas } from "@/components/QuickTreeCanvas";
 import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { PlaybackControls } from "@/components/PlaybackControls";
@@ -36,11 +37,18 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
           <h1 className="heading-slab mt-1 text-3xl sm:text-4xl">{algo.name}</h1>
         </div>
         <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
-          {tree ? (
+          {tree?.kind === "merge" ? (
             <>
               <Legend color="var(--bar-compare)" label="Splitting" />
               <Legend color="var(--bar-swap)" label="Merging" />
               <Legend color="var(--bar-sorted)" label="Sorted run" />
+            </>
+          ) : tree?.kind === "quick" ? (
+            <>
+              <Legend color="var(--bar-pivot)" label="Pivot" />
+              <Legend color="var(--bar-compare)" label="Partitioning" />
+              <Legend color="var(--bar-swap)" label="Pivot placed" />
+              <Legend color="var(--bar-sorted)" label="Sorted" />
             </>
           ) : (
             <>
@@ -57,8 +65,10 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
       <div
         className={`grid gap-6 ${tree ? "lg:grid-cols-[2fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}
       >
-        {tree ? (
+        {tree?.kind === "merge" ? (
           <MergeTreeCanvas tree={tree} />
+        ) : tree?.kind === "quick" ? (
+          <QuickTreeCanvas tree={tree} />
         ) : (
           <VisualizerCanvas frame={player.currentFrame} />
         )}
@@ -97,6 +107,8 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
         time={algo.time}
         space={algo.space}
         stats={[
+          { label: "Stable", value: algo.stable ? "Yes" : "No" },
+          { label: "In-place", value: algo.inPlace ? "Yes" : "No" },
           { label: "Comparisons", value: player.currentFrame.comparisons },
           { label: "Swaps", value: player.currentFrame.swaps },
         ]}

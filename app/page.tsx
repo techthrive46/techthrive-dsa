@@ -52,6 +52,7 @@ const topics = [
     title: "Recursion",
     desc: "Call stacks and recursion trees, frame by frame.",
     count: "4 classics",
+    to: "/recursion" as const,
   },
   {
     icon: Layers,
@@ -108,19 +109,6 @@ export default function Index() {
               Browse topics
             </Link>
           </div>
-
-          <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-dashed border-border pt-6">
-            {[
-              ["23+", "visual lessons"],
-              ["100%", "step-by-step"],
-              ["0", "sign-ups"],
-            ].map(([n, l]) => (
-              <div key={l}>
-                <dt className="heading-slab text-3xl">{n}</dt>
-                <dd className="text-xs text-muted-foreground">{l}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
 
         <HeroDemo />

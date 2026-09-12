@@ -16,13 +16,16 @@ export type Frame = {
   line: number;
   comparisons: number;
   swaps: number;
-  tree: MergeTree | null;
+  tree: RecursionTree | null;
   counts?: number[] | null;
   activeCountIndex?: number | null;
   buckets?: { label: string; values: number[] }[] | null;
 };
 
 export type MergeNodeStatus = "hidden" | "idle" | "splitting" | "merging" | "merged";
+
+/** Carries the original item id so the UI can fly the same token between boxes. */
+export type MergeSlot = { id: number; value: number } | null;
 
 export type MergeTreeNode = {
   id: string;
@@ -31,15 +34,41 @@ export type MergeTreeNode = {
   depth: number;
   parentId: string | null;
   /** Values held by this sub-array; `null` marks a slot still waiting to be merged. */
-  slots: (number | null)[];
+  slots: MergeSlot[];
   status: MergeNodeStatus;
 };
 
 export type MergeTree = {
+  kind: "merge";
   nodes: MergeTreeNode[];
   maxDepth: number;
   leaves: number;
 };
+
+export type QuickNodeStatus = "idle" | "pivoting" | "partitioning" | "placed" | "sorted";
+
+export type QuickTreeNode = {
+  id: string;
+  lo: number;
+  hi: number;
+  depth: number;
+  parentId: string | null;
+  /** Current values held by a[lo..hi]. */
+  values: number[];
+  pivotValue: number | null;
+  /** Absolute index (into the full array) currently holding the pivot. */
+  pivotIndex: number | null;
+  status: QuickNodeStatus;
+};
+
+export type QuickTree = {
+  kind: "quick";
+  nodes: QuickTreeNode[];
+  maxDepth: number;
+  leaves: number;
+};
+
+export type RecursionTree = MergeTree | QuickTree;
 
 export type Item = { id: number; value: number };
 
@@ -63,6 +92,8 @@ export type AlgoMeta = {
   time: string;
   space: string;
   blurb: string;
+  stable: boolean;
+  inPlace: boolean;
   pseudocode: string[];
 };
 
@@ -72,7 +103,10 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Bubble Sort",
     time: "O(n²)",
     space: "O(1)",
-    blurb: "Repeatedly swaps neighbouring pairs until the largest value bubbles to the end.",
+    blurb:
+      "A comparison sort that repeatedly steps through the array, compares each pair of adjacent elements, and swaps them if they are in the wrong order. Each full pass 'bubbles' the largest remaining value to its final position, so the algorithm needs at most n-1 passes.",
+    stable: true,
+    inPlace: true,
     pseudocode: [
       "for i from 0 to n-1",
       "  for j from 0 to n-i-2",
@@ -86,7 +120,10 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Selection Sort",
     time: "O(n²)",
     space: "O(1)",
-    blurb: "Scans for the smallest remaining value and places it at the front.",
+    blurb:
+      "A comparison sort that divides the array into a sorted prefix and an unsorted suffix. On each pass it selects the minimum element of the unsorted suffix and swaps it into the next position of the sorted prefix, growing it by one element at a time.",
+    stable: false,
+    inPlace: true,
     pseudocode: [
       "for i from 0 to n-1",
       "  min = i",
@@ -100,7 +137,10 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Insertion Sort",
     time: "O(n²)",
     space: "O(1)",
-    blurb: "Grows a sorted prefix by inserting each new value into its place.",
+    blurb:
+      "A comparison sort that builds the final sorted array one element at a time. It takes each element from the unsorted part and inserts it into its correct position within the already-sorted prefix, shifting larger elements right to make room — the same way you'd sort playing cards in your hand.",
+    stable: true,
+    inPlace: true,
     pseudocode: [
       "for i from 1 to n-1",
       "  key = a[i]",
@@ -115,7 +155,10 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Merge Sort",
     time: "O(n log n)",
     space: "O(n)",
-    blurb: "Splits the array in half, sorts each half, then merges them in order.",
+    blurb:
+      "A divide-and-conquer comparison sort. It recursively splits the array in half until each piece is a single element (trivially sorted), then merges pairs of sorted pieces back together in order. The recursion forms a binary tree: dividing takes it down, merging brings the sorted result back up.",
+    stable: true,
+    inPlace: false,
     pseudocode: [
       "mergeSort(lo, hi)",
       "  if lo >= hi return",
@@ -128,9 +171,12 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
   quick: {
     key: "quick",
     name: "Quick Sort",
-    time: "O(n log n) avg",
+    time: "O(n log n) avg, O(n²) worst",
     space: "O(log n)",
-    blurb: "Picks a pivot, partitions smaller/larger around it, then recurses.",
+    blurb:
+      "A divide-and-conquer comparison sort. It chooses a pivot element and partitions the array so everything smaller than the pivot ends up on its left and everything larger ends up on its right, placing the pivot at its final sorted index. It then recurses on the two partitions independently — the pivot never needs to move again.",
+    stable: false,
+    inPlace: true,
     pseudocode: [
       "quickSort(lo, hi)",
       "  if lo >= hi return",
@@ -145,7 +191,10 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Heap Sort",
     time: "O(n log n)",
     space: "O(1)",
-    blurb: "Converts the array into a Max Heap (where parent ≥ children), then repeatedly extracts the root max element.",
+    blurb:
+      "A comparison sort built on the binary heap data structure. It first arranges the array into a max-heap (every parent is ≥ its children), so the largest value sits at the root. It then repeatedly swaps the root with the last unsorted element and 'sifts down' the new root to restore the heap property, shrinking the heap by one each time.",
+    stable: false,
+    inPlace: true,
     pseudocode: [
       "heapify(a, i, size):",
       "  left = 2*i + 1; right = 2*i + 2",
@@ -162,9 +211,12 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
   shell: {
     key: "shell",
     name: "Shell Sort",
-    time: "O(n¹.⁵) avg",
+    time: "O(n log² n) (gap-dependent)",
     space: "O(1)",
-    blurb: "Generalization of insertion sort that compares elements separated by a gap h (halving down to 1), moving items across long distances fast.",
+    blurb:
+      "A generalization of insertion sort. Instead of only comparing neighbours, it compares elements a fixed gap h apart, insertion-sorting each of those interleaved sub-sequences. The gap shrinks on each pass (here, halved every time) down to 1, so early passes move far-out-of-place elements long distances quickly, leaving little work for the final gap-1 pass.",
+    stable: false,
+    inPlace: true,
     pseudocode: [
       "shellSort(a):",
       "  for gap = floor(n/2) down to 1 (gap /= 2):",
@@ -180,7 +232,10 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Counting Sort",
     time: "O(n + k)",
     space: "O(k)",
-    blurb: "Non-comparison sort that counts element occurrences and reconstructs the array in order.",
+    blurb:
+      "A non-comparison integer sort. Instead of comparing elements, it counts how many times each distinct value (0 to k) occurs, then uses those counts to write every value directly into its final sorted position. Because it never compares elements, it beats the O(n log n) comparison-sort lower bound — at the cost of needing k to be small relative to n.",
+    stable: true,
+    inPlace: false,
     pseudocode: [
       "find max value k in array",
       "count = array of size k+1 initialized to 0",
@@ -191,9 +246,12 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
   radix: {
     key: "radix",
     name: "Radix Sort",
-    time: "O(nk)",
-    space: "O(n + k)",
-    blurb: "Sorts integers digit by digit from least significant to most significant using bucket distribution.",
+    time: "O(d · (n + b))",
+    space: "O(n + b)",
+    blurb:
+      "A non-comparison integer sort that processes digits rather than whole values. It repeatedly buckets elements by one digit at a time — least significant first — using a stable counting/bucket pass, and re-collects them after each pass. After d passes (d = number of digits in the largest value), the array is fully sorted.",
+    stable: true,
+    inPlace: false,
     pseudocode: [
       "m = max(a)",
       "for exp = 1; m / exp > 0; exp *= 10",
@@ -203,9 +261,12 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
   bucket: {
     key: "bucket",
     name: "Bucket Sort",
-    time: "O(n + k) avg",
-    space: "O(n)",
-    blurb: "Distributes elements into numerical buckets, sorts each bucket, then merges them together.",
+    time: "O(n + k) avg, O(n²) worst",
+    space: "O(n + k)",
+    blurb:
+      "A distribution sort that scatters elements into a fixed number of buckets based on their value range, sorts each (usually small) bucket individually, and concatenates the buckets back together in order. It works best when input values are spread roughly uniformly across the range, so buckets fill evenly.",
+    stable: true,
+    inPlace: false,
     pseudocode: [
       "buckets = array of empty buckets",
       "for x in a: insert x into bucket[floor(x / interval)]",
@@ -218,7 +279,10 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Cocktail Shaker Sort",
     time: "O(n²)",
     space: "O(1)",
-    blurb: "Bi-directional variation of bubble sort that passes left-to-right (bubbling max to end) then right-to-left (sinking min to start).",
+    blurb:
+      "A bidirectional variant of bubble sort. It alternates passes: left-to-right, bubbling the largest remaining value to the end, then right-to-left, sinking the smallest remaining value to the start. Shrinking the unsorted window from both ends each round lets small values near the end escape faster than plain bubble sort would move them.",
+    stable: true,
+    inPlace: true,
     pseudocode: [
       "cocktailSort(a):",
       "  start = 0; end = n - 1; swapped = true",
@@ -236,7 +300,10 @@ export const ALGOS: Record<AlgoKey, AlgoMeta> = {
     name: "Gnome Sort",
     time: "O(n²)",
     space: "O(1)",
-    blurb: "Similar to insertion sort, stepping forward when order is correct and stepping back on swaps.",
+    blurb:
+      "A comparison sort resembling insertion sort but implemented with a single moving position instead of nested loops. It steps forward whenever the current pair is in order, and whenever it isn't, it swaps the pair and steps back one place — repeating the check — until the prefix behind it is locally sorted again.",
+    stable: true,
+    inPlace: true,
     pseudocode: [
       "pos = 0",
       "while pos < n",
@@ -262,7 +329,7 @@ type MergeTreeState = {
 };
 
 /** Pre-builds every node of the merge-sort recursion tree; all but the root start hidden. */
-function createMergeTree(values: number[]): MergeTreeState {
+function createMergeTree(items: Item[]): MergeTreeState {
   const nodes = new Map<string, MergeTreeNode>();
   let maxDepth = 0;
 
@@ -275,7 +342,7 @@ function createMergeTree(values: number[]): MergeTreeState {
       hi,
       depth,
       parentId,
-      slots: values.slice(lo, hi + 1),
+      slots: items.slice(lo, hi + 1).map((item) => ({ id: item.id, value: item.value })),
       status: depth === 0 ? "idle" : "hidden",
     });
     if (lo >= hi) return;
@@ -284,7 +351,7 @@ function createMergeTree(values: number[]): MergeTreeState {
     add(mid + 1, hi, depth + 1, id);
   };
 
-  add(0, values.length - 1, 0, null);
+  add(0, items.length - 1, 0, null);
 
   return {
     node: (lo, hi) => nodes.get(`${lo}-${hi}`)!,
@@ -296,9 +363,40 @@ function createMergeTree(values: number[]): MergeTreeState {
       }
     },
     snapshot: () => ({
+      kind: "merge",
       maxDepth,
-      leaves: values.length,
+      leaves: items.length,
       nodes: [...nodes.values()].map((n) => ({ ...n, slots: [...n.slots] })),
+    }),
+  };
+}
+
+type QuickTreeState = {
+  ensure: (lo: number, hi: number, parentId: string | null, depth: number) => QuickTreeNode;
+  snapshot: () => QuickTree;
+};
+
+/** Builds the quick-sort partition tree lazily, since split points depend on runtime values. */
+function createQuickTree(leaves: number): QuickTreeState {
+  const nodes = new Map<string, QuickTreeNode>();
+  let maxDepth = 0;
+
+  return {
+    ensure: (lo, hi, parentId, depth) => {
+      const id = `${lo}-${hi}`;
+      maxDepth = Math.max(maxDepth, depth);
+      let node = nodes.get(id);
+      if (!node) {
+        node = { id, lo, hi, depth, parentId, values: [], pivotValue: null, pivotIndex: null, status: "idle" };
+        nodes.set(id, node);
+      }
+      return node;
+    },
+    snapshot: () => ({
+      kind: "quick",
+      maxDepth,
+      leaves,
+      nodes: [...nodes.values()].map((n) => ({ ...n, values: [...n.values] })),
     }),
   };
 }
@@ -309,7 +407,8 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
   let comparisons = 0;
   let swaps = 0;
   const sorted = new Set<number>();
-  const tree = algo === "merge" ? createMergeTree(input) : null;
+  const mergeTree = algo === "merge" ? createMergeTree(a) : null;
+  const quickTree = algo === "quick" ? createQuickTree(input.length) : null;
 
   const push = (p: Partial<Frame> & { caption: string; note: string; line: number }) => {
     frames.push({
@@ -331,7 +430,7 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
       sorted: [...sorted],
       comparisons,
       swaps,
-      tree: tree ? tree.snapshot() : null,
+      tree: mergeTree ? mergeTree.snapshot() : quickTree ? quickTree.snapshot() : null,
     });
   };
 
@@ -444,9 +543,9 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
     }
   }
 
-  if (algo === "merge" && tree) {
+  if (algo === "merge" && mergeTree) {
     const mergeSort = (lo: number, hi: number) => {
-      const node = tree.node(lo, hi);
+      const node = mergeTree.node(lo, hi);
 
       if (lo >= hi) {
         node.status = "merged";
@@ -460,13 +559,13 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
       }
 
       const mid = Math.floor((lo + hi) / 2);
-      const leftNode = tree.node(lo, mid);
-      const rightNode = tree.node(mid + 1, hi);
+      const leftNode = mergeTree.node(lo, mid);
+      const rightNode = mergeTree.node(mid + 1, hi);
       node.status = "splitting";
       leftNode.status = "idle";
-      leftNode.slots = a.slice(lo, mid + 1).map((item) => item.value);
+      leftNode.slots = a.slice(lo, mid + 1).map((item) => ({ id: item.id, value: item.value }));
       rightNode.status = "idle";
-      rightNode.slots = a.slice(mid + 1, hi + 1).map((item) => item.value);
+      rightNode.slots = a.slice(mid + 1, hi + 1).map((item) => ({ id: item.id, value: item.value }));
       push({
         comparing: range(lo, hi),
         caption: `Split [${lo}…${hi}] at ${mid}`,
@@ -483,7 +582,7 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
       let i = 0;
       let j = 0;
       node.status = "merging";
-      node.slots = new Array<number | null>(hi - lo + 1).fill(null);
+      node.slots = new Array<MergeSlot>(hi - lo + 1).fill(null);
       push({
         comparing: range(lo, hi),
         caption: `Merge [${lo}…${mid}] with [${mid + 1}…${hi}]`,
@@ -491,10 +590,12 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
         line: 4,
       });
 
-      // Values land in the tree node first; the array itself is rewritten once the
-      // whole run is merged, so a frame never holds the same item twice.
-      const take = (item: Item) => {
-        node.slots[merged.length] = item.value;
+      // Clearing the source box's slot in the same step that fills the destination
+      // slot is what lets the UI fly the same token from one box to the other.
+      const take = (source: "left" | "right", index: number, item: Item) => {
+        node.slots[merged.length] = { id: item.id, value: item.value };
+        if (source === "left") leftNode.slots[index] = null;
+        else rightNode.slots[index] = null;
         merged.push(item);
         swaps++;
       };
@@ -504,7 +605,13 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
         const lv = left[i]!.value;
         const rv = right[j]!.value;
         const fromLeft = lv <= rv;
-        take(fromLeft ? left[i++]! : right[j++]!);
+        if (fromLeft) {
+          take("left", i, left[i]!);
+          i++;
+        } else {
+          take("right", j, right[j]!);
+          j++;
+        }
         push({
           comparing: [lo + merged.length - 1],
           caption: `Compare ${lv} and ${rv} — take ${fromLeft ? lv : rv}`,
@@ -515,8 +622,14 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
 
       if (i < left.length || j < right.length) {
         const rest = i < left.length ? left.slice(i) : right.slice(j);
-        while (i < left.length) take(left[i++]!);
-        while (j < right.length) take(right[j++]!);
+        while (i < left.length) {
+          take("left", i, left[i]!);
+          i++;
+        }
+        while (j < right.length) {
+          take("right", j, right[j]!);
+          j++;
+        }
         push({
           comparing: range(lo + merged.length - rest.length, lo + merged.length - 1),
           caption: `Copy remaining ${rest.map((item) => item.value).join(", ")}`,
@@ -529,7 +642,7 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
         a[lo + offset] = item;
       });
       node.status = "merged";
-      tree.collapse(lo, hi);
+      mergeTree.collapse(lo, hi);
       push({
         swapping: range(lo, hi),
         caption: `Merged [${lo}…${hi}]`,
@@ -541,16 +654,30 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
     for (let i = 0; i < a.length; i++) sorted.add(i);
   }
 
-  if (algo === "quick") {
-    const quickSort = (lo: number, hi: number) => {
+  if (algo === "quick" && quickTree) {
+    const syncValues = (node: QuickTreeNode, lo: number, hi: number) => {
+      node.values = a.slice(lo, hi + 1).map((item) => item.value);
+    };
+
+    const quickSort = (lo: number, hi: number, parentId: string | null, depth: number) => {
       if (lo > hi) return;
+      const node = quickTree.ensure(lo, hi, parentId, depth);
+      syncValues(node, lo, hi);
+
       if (lo === hi) {
+        node.status = "sorted";
         sorted.add(lo);
         push({ caption: `${a[lo]!.value} is in place`, note: "single element", line: 1 });
         return;
       }
+
       const pivotVal = a[hi]!.value;
+      node.pivotValue = pivotVal;
+      node.pivotIndex = hi;
+      node.status = "pivoting";
       push({ pivot: hi, caption: `Pivot = ${pivotVal}`, note: "partition around it", line: 2 });
+
+      node.status = "partitioning";
       let i = lo;
       for (let j = lo; j < hi; j++) {
         comparisons++;
@@ -568,6 +695,7 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
             a[i] = a[j]!;
             a[j] = tmp;
             swaps++;
+            syncValues(node, lo, hi);
             push({ pivot: hi, swapping: [i, j], caption: "Swap", note: "keep small values left", line: 3 });
           }
           i++;
@@ -578,11 +706,18 @@ export function buildFrames(input: number[], algo: AlgoKey): Frame[] {
       a[hi] = tmp2;
       swaps++;
       sorted.add(i);
+      node.pivotIndex = i;
+      node.status = "placed";
+      syncValues(node, lo, hi);
       push({ swapping: [i, hi], caption: `Pivot ${pivotVal} lands at index ${i}`, note: "final position", line: 4 });
-      quickSort(lo, i - 1);
-      quickSort(i + 1, hi);
+
+      quickSort(lo, i - 1, node.id, depth + 1);
+      quickSort(i + 1, hi, node.id, depth + 1);
+
+      node.status = "sorted";
+      push({ caption: `[${lo}…${hi}] is fully sorted`, note: "left and right partitions merged in place", line: 4 });
     };
-    quickSort(0, a.length - 1);
+    quickSort(0, a.length - 1, null, 0);
     for (let i = 0; i < a.length; i++) sorted.add(i);
   }
 

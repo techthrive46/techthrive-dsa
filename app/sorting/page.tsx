@@ -31,7 +31,7 @@ export default function SortingPage() {
               {algo.time} · {algo.space} space
             </span>
             <h2 className="heading-slab mt-3 text-xl">{algo.name}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{algo.blurb}</p>
+            <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{algo.blurb}</p>
             <p className="mt-4 flex items-center gap-1.5 text-sm font-bold text-primary">
               Open visualizer <ArrowRight className="size-4" />
             </p>

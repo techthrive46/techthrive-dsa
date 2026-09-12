@@ -86,7 +86,7 @@ function TreeNode({ node, leaves }: { node: MergeTreeNode; leaves: number }) {
   const status = node.status as Exclude<MergeNodeStatus, "hidden">;
   const lastFilled =
     status === "merging"
-      ? node.slots.reduce((acc, value, i) => (value !== null ? i : acc), -1)
+      ? node.slots.reduce((acc, slot, i) => (slot !== null ? i : acc), -1)
       : -1;
 
   return (
@@ -106,14 +106,23 @@ function TreeNode({ node, leaves }: { node: MergeTreeNode; leaves: number }) {
         className={`mx-1 flex items-center justify-center gap-0.5 rounded-md border px-1 transition-colors duration-300 ${STATUS_STYLES[status]}`}
         style={{ height: NODE_HEIGHT }}
       >
-        {node.slots.map((value, i) => (
+        {node.slots.map((slot, i) => (
           <span
             key={i}
-            className={`min-w-0 flex-1 rounded-sm py-0.5 text-center font-mono text-xs font-bold tabular-nums transition-colors duration-200 sm:text-sm ${
-              value === null ? "text-muted-foreground/40" : ""
+            className={`flex min-w-0 flex-1 items-center justify-center rounded-sm py-0.5 font-mono text-xs font-bold tabular-nums transition-colors duration-200 sm:text-sm ${
+              slot === null ? "text-muted-foreground/40" : ""
             } ${i === lastFilled ? "bg-bar-swap text-primary-foreground" : ""}`}
           >
-            {value ?? "·"}
+            {slot ? (
+              <motion.span
+                layoutId={`merge-item-${slot.id}`}
+                transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              >
+                {slot.value}
+              </motion.span>
+            ) : (
+              "·"
+            )}
           </span>
         ))}
       </div>

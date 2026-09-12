@@ -46,7 +46,7 @@ export const SEARCH_ALGOS: Record<SearchAlgoKey, SearchAlgoMeta> = {
     time: "O(n)",
     space: "O(1)",
     blurb:
-      "Checks every value from left to right until the target shows up — no ordering required.",
+      "The simplest search strategy: examine each element in sequence, from the first index to the last, and stop as soon as one equals the target. It makes no assumption about ordering, so it works on any array — but in the worst case (target absent, or last in the array) it must inspect every element.",
     needsSorted: false,
     pointerLabel: "i",
     pseudocode: [
@@ -63,7 +63,7 @@ export const SEARCH_ALGOS: Record<SearchAlgoKey, SearchAlgoMeta> = {
     time: "O(log n)",
     space: "O(1)",
     blurb:
-      "Compares the middle of a sorted array and throws away half the window every step.",
+      "A divide-and-conquer search that requires a sorted array. It compares the target to the middle element of the current window: an exact match returns immediately, a smaller middle value discards the left half, and a larger one discards the right half. Halving the window every step is what gives it logarithmic time — the same shape as walking down a balanced binary search tree.",
     needsSorted: true,
     pointerLabel: "mid",
     pseudocode: [
@@ -83,7 +83,7 @@ export const SEARCH_ALGOS: Record<SearchAlgoKey, SearchAlgoMeta> = {
     time: "O(√n)",
     space: "O(1)",
     blurb:
-      "Jumps ahead by fixed blocks of size √n on a sorted array, then performs a linear search in the identified block.",
+      "A middle ground between linear and binary search for sorted arrays. It first jumps ahead in fixed-size blocks (optimally of size √n) until it finds a block whose last element is not smaller than the target, then falls back to a plain linear scan within that one block to pinpoint the value.",
     needsSorted: true,
     pointerLabel: "step",
     pseudocode: [
@@ -102,10 +102,10 @@ export const SEARCH_ALGOS: Record<SearchAlgoKey, SearchAlgoMeta> = {
   interpolation: {
     key: "interpolation",
     name: "Interpolation Search",
-    time: "O(log log n)",
+    time: "O(log log n) avg, O(n) worst",
     space: "O(1)",
     blurb:
-      "Estimates target index based on value bounds on uniformly distributed sorted data, probing directly toward target.",
+      "An improvement on binary search for sorted, numeric data. Rather than always probing the middle, it estimates where the target is likely to sit by linearly interpolating between the values at the two ends of the window — the way you'd flip straight to the 'M' section of a phone book instead of opening it in the middle. It's fastest when values are roughly uniformly distributed; on skewed data it degrades toward linear search.",
     needsSorted: true,
     pointerLabel: "pos",
     pseudocode: [
@@ -125,7 +125,7 @@ export const SEARCH_ALGOS: Record<SearchAlgoKey, SearchAlgoMeta> = {
     time: "O(log n)",
     space: "O(1)",
     blurb:
-      "Doubles the search bound range exponentially (1, 2, 4, 8...) to locate the interval, then runs binary search.",
+      "Also called galloping search. Designed for sorted arrays (including unbounded ones) where the target is likely near the front: it doubles a bound — 1, 2, 4, 8, … — until the value there meets or passes the target, which brackets the target inside a range at most twice the distance to its true position. A regular binary search over that small bracket then finds the exact index.",
     needsSorted: true,
     pointerLabel: "bound",
     pseudocode: [
@@ -143,7 +143,7 @@ export const SEARCH_ALGOS: Record<SearchAlgoKey, SearchAlgoMeta> = {
     time: "O(log₃ n)",
     space: "O(1)",
     blurb:
-      "Divides the sorted array into three equal segments using two midpoints, narrowing search space by 2/3 each step.",
+      "A divide-and-conquer search that splits the current window into three equal parts using two midpoints instead of one. Comparing the target against both midpoints lets it discard one third (or, if the target lies between them, two thirds) of the window each step. It still runs in logarithmic time, but needs roughly 50% more comparisons per level than binary search, so binary search remains the standard choice for plain lookups.",
     needsSorted: true,
     pointerLabel: "mid1, mid2",
     pseudocode: [
