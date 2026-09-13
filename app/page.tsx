@@ -46,6 +46,7 @@ const topics = [
     title: "Trees",
     desc: "BST insert, delete, traversals and AVL rotations.",
     count: "6 operations",
+    to: "/trees" as const,
   },
   {
     icon: Binary,
