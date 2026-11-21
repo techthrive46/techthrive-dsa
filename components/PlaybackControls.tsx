@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Pause, Play, Shuffle, SkipBack, SkipForward, RotateCcw } from "lucide-react";
+import { ARRAY_LIMITS, parseIntList } from "@/lib/inputs";
 
 type PlaybackControlsProps = {
   isPlaying: boolean;
@@ -23,37 +24,8 @@ type PlaybackControlsProps = {
   hint?: string;
 };
 
-const MIN_SIZE = 3;
-const MAX_SIZE = 16;
-const MIN_VALUE = 1;
-const MAX_VALUE = 20;
-
-function parseCustomArray(
-  input: string,
-): { ok: true; values: number[] } | { ok: false; error: string } {
-  const parts = input
-    .split(/[\s,]+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
-  if (parts.length < MIN_SIZE || parts.length > MAX_SIZE) {
-    return { ok: false, error: `Enter ${MIN_SIZE}–${MAX_SIZE} numbers.` };
-  }
-
-  const values: number[] = [];
-  for (const part of parts) {
-    const n = Number(part);
-    if (!Number.isInteger(n) || n < MIN_VALUE || n > MAX_VALUE) {
-      return {
-        ok: false,
-        error: `Values must be integers from ${MIN_VALUE} to ${MAX_VALUE}.`,
-      };
-    }
-    values.push(n);
-  }
-
-  return { ok: true, values };
-}
+const { minSize: MIN_SIZE, maxSize: MAX_SIZE, minValue: MIN_VALUE, maxValue: MAX_VALUE } =
+  ARRAY_LIMITS;
 
 export function PlaybackControls({
   isPlaying,
@@ -77,7 +49,7 @@ export function PlaybackControls({
   const [error, setError] = useState<string | null>(null);
 
   const handleApplyCustom = () => {
-    const result = parseCustomArray(customInput);
+    const result = parseIntList(customInput, ARRAY_LIMITS);
     if (!result.ok) {
       setError(result.error);
       return;

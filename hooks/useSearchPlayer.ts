@@ -23,11 +23,13 @@ const DEFAULTS: Record<SearchAlgoKey, { array: number[]; target: number }> = {
 
 type UseSearchPlayerOptions = {
   algo: SearchAlgoKey;
+  initialArray?: number[];
+  initialTarget?: number;
 };
 
-export function useSearchPlayer({ algo }: UseSearchPlayerOptions) {
-  const [array, setArrayState] = useState<number[]>(DEFAULTS[algo].array);
-  const [target, setTargetState] = useState<number>(DEFAULTS[algo].target);
+export function useSearchPlayer({ algo, initialArray, initialTarget }: UseSearchPlayerOptions) {
+  const [array, setArrayState] = useState<number[]>(initialArray ?? DEFAULTS[algo].array);
+  const [target, setTargetState] = useState<number>(initialTarget ?? DEFAULTS[algo].target);
 
   const frames = useMemo(
     () => buildSearchFrames(array, target, algo),

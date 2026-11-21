@@ -15,12 +15,16 @@ function randomUniqueValues(count: number, min: number, max: number): number[] {
 
 type UseTreePlayerOptions = {
   op: TreeOpKey;
+  initialValues?: number[];
+  initialTarget?: number;
 };
 
-export function useTreePlayer({ op }: UseTreePlayerOptions) {
+export function useTreePlayer({ op, initialValues, initialTarget }: UseTreePlayerOptions) {
   const meta = TREE_OPS[op];
-  const [values, setValuesState] = useState<number[]>(meta.defaultValues);
-  const [target, setTargetState] = useState<number | null>(meta.defaultTarget ?? null);
+  const [values, setValuesState] = useState<number[]>(initialValues ?? meta.defaultValues);
+  const [target, setTargetState] = useState<number | null>(
+    initialTarget ?? meta.defaultTarget ?? null,
+  );
 
   const frames = useMemo(
     () => buildTreeFrames(op, values, meta.needsTarget ? target : null),

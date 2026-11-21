@@ -1,5 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useUrlSync } from "@/hooks/useUrlSync";
+import { ShareLinkButton } from "@/components/ShareLinkButton";
 import Link from "next/link";
 import { TREE_OPS, type TreeOpKey } from "@/lib/trees";
 import { useTreePlayer } from "@/hooks/useTreePlayer";
@@ -8,18 +12,53 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { TreeControls } from "@/components/TreeControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { TREES_CODE } from "@/lib/code/trees";
+import { TREE_LIMITS, intFromParam, intListFromParam } from "@/lib/inputs";
 
 type TreeVisualizerProps = {
   opKey: TreeOpKey;
 };
 
 export function TreeVisualizer({ opKey }: TreeVisualizerProps) {
-  return <TreeVisualizerInner key={opKey} opKey={opKey} />;
+  // The prerendered HTML shows the default run; a shared link's input
+  // (?values=…&target=…) is read on the client, inside this boundary.
+  return (
+    <Suspense fallback={<TreeVisualizerInner key={opKey} opKey={opKey} />}>
+      <TreeVisualizerFromUrl key={opKey} opKey={opKey} />
+    </Suspense>
+  );
 }
 
-function TreeVisualizerInner({ opKey }: { opKey: TreeOpKey }) {
+function TreeVisualizerFromUrl({ opKey }: { opKey: TreeOpKey }) {
+  const searchParams = useSearchParams();
+  return (
+    <TreeVisualizerInner
+      opKey={opKey}
+      initialValues={intListFromParam(searchParams.get("values"), TREE_LIMITS)}
+      initialTarget={intFromParam(
+        searchParams.get("target"),
+        TREE_LIMITS.minValue,
+        TREE_LIMITS.maxValue,
+      )}
+    />
+  );
+}
+
+function TreeVisualizerInner({
+  opKey,
+  initialValues,
+  initialTarget,
+}: {
+  opKey: TreeOpKey;
+  initialValues?: number[];
+  initialTarget?: number;
+}) {
   const meta = TREE_OPS[opKey];
-  const player = useTreePlayer({ op: opKey });
+  const player = useTreePlayer({ op: opKey, initialValues, initialTarget });
+  useUrlSync({
+    values: player.values.join(","),
+    target: meta.needsTarget && player.target !== null ? String(player.target) : null,
+  });
   const frame = player.currentFrame;
   const isTraversal = opKey === "inorder" || opKey === "preorder" || opKey === "postorder";
 
@@ -33,7 +72,10 @@ function TreeVisualizerInner({ opKey }: { opKey: TreeOpKey }) {
           >
             ← All tree operations
           </Link>
-          <h1 className="heading-slab mt-1 text-3xl sm:text-4xl">{meta.name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <h1 className="heading-slab text-3xl sm:text-4xl">{meta.name}</h1>
+            <ShareLinkButton />
+          </div>
         </div>
         <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
           <Legend color="var(--bar-compare)" label={isTraversal ? "Visiting" : "Comparing"} />
@@ -50,7 +92,11 @@ function TreeVisualizerInner({ opKey }: { opKey: TreeOpKey }) {
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <TreeCanvas tree={frame.tree} />
-        <PseudocodePanel pseudocode={meta.pseudocode} line={frame.line} />
+        <PseudocodePanel
+          pseudocode={meta.pseudocode}
+          line={frame.line}
+          code={TREES_CODE[opKey]}
+        />
       </div>
 
       {isTraversal ? (

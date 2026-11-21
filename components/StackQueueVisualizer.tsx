@@ -1,7 +1,16 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useUrlSync } from "@/hooks/useUrlSync";
+import { ShareLinkButton } from "@/components/ShareLinkButton";
 import Link from "next/link";
-import { STRUCTURES, type StructureKey } from "@/lib/stacksQueues";
+import {
+  STRUCTURES,
+  scriptToText,
+  type Operation,
+  type StructureKey,
+} from "@/lib/stacksQueues";
 import { useStackQueuePlayer } from "@/hooks/useStackQueuePlayer";
 import { StackCanvas } from "@/components/StackCanvas";
 import { QueueCanvas } from "@/components/QueueCanvas";
@@ -9,18 +18,41 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { StackQueueControls } from "@/components/StackQueueControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { STACKS_QUEUES_CODE } from "@/lib/code/stacksQueues";
+import { scriptFromParam } from "@/lib/inputs";
 
 type StackQueueVisualizerProps = {
   structureKey: StructureKey;
 };
 
 export function StackQueueVisualizer({ structureKey }: StackQueueVisualizerProps) {
-  return <StackQueueVisualizerInner key={structureKey} structureKey={structureKey} />;
+  // The prerendered HTML shows the default run; a shared link's input
+  // (?ops=…) is read on the client, inside this boundary.
+  return (
+    <Suspense fallback={<StackQueueVisualizerInner key={structureKey} structureKey={structureKey} />}>
+      <StackQueueVisualizerFromUrl key={structureKey} structureKey={structureKey} />
+    </Suspense>
+  );
 }
 
-function StackQueueVisualizerInner({ structureKey }: { structureKey: StructureKey }) {
+function StackQueueVisualizerFromUrl({ structureKey }: { structureKey: StructureKey }) {
+  const searchParams = useSearchParams();
+  const initialScript = scriptFromParam(searchParams.get("ops"), structureKey);
+  return (
+    <StackQueueVisualizerInner structureKey={structureKey} initialScript={initialScript} />
+  );
+}
+
+function StackQueueVisualizerInner({
+  structureKey,
+  initialScript,
+}: {
+  structureKey: StructureKey;
+  initialScript?: Operation[];
+}) {
   const meta = STRUCTURES[structureKey];
-  const player = useStackQueuePlayer({ structure: structureKey });
+  const player = useStackQueuePlayer({ structure: structureKey, initialScript });
+  useUrlSync({ ops: scriptToText(structureKey, player.script).replace(/, /g, ",") });
   const frame = player.currentFrame;
   const isStack = structureKey === "stack";
 
@@ -34,7 +66,10 @@ function StackQueueVisualizerInner({ structureKey }: { structureKey: StructureKe
           >
             ← All structures
           </Link>
-          <h1 className="heading-slab mt-1 text-3xl sm:text-4xl">{meta.name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <h1 className="heading-slab text-3xl sm:text-4xl">{meta.name}</h1>
+            <ShareLinkButton />
+          </div>
         </div>
         <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
           <Legend color="var(--bar-compare)" label={isStack ? "Pushed" : "Enqueued"} />
@@ -44,7 +79,11 @@ function StackQueueVisualizerInner({ structureKey }: { structureKey: StructureKe
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         {isStack ? <StackCanvas frame={frame} /> : <QueueCanvas frame={frame} />}
-        <PseudocodePanel pseudocode={meta.pseudocode} line={frame.line} />
+        <PseudocodePanel
+          pseudocode={meta.pseudocode}
+          line={frame.line}
+          code={STACKS_QUEUES_CODE[structureKey]}
+        />
       </div>
 
       <FrameCaption

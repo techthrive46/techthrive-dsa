@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Pause, Play, Shuffle, SkipBack, SkipForward, RotateCcw } from "lucide-react";
+import { TREE_LIMITS, parseIntList } from "@/lib/inputs";
 
 type TreeControlsProps = {
   isPlaying: boolean;
@@ -22,38 +23,8 @@ type TreeControlsProps = {
   onApply: (values: number[], target: number | null) => void;
 };
 
-const MIN_SIZE = 3;
-const MAX_SIZE = 9;
-const MIN_VALUE = 1;
-const MAX_VALUE = 99;
-
-function parseValues(
-  input: string,
-): { ok: true; values: number[] } | { ok: false; error: string } {
-  const parts = input
-    .split(/[\s,]+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
-  if (parts.length < MIN_SIZE || parts.length > MAX_SIZE) {
-    return { ok: false, error: `Enter ${MIN_SIZE}–${MAX_SIZE} numbers.` };
-  }
-
-  const values: number[] = [];
-  const seen = new Set<number>();
-  for (const part of parts) {
-    const n = Number(part);
-    if (!Number.isInteger(n) || n < MIN_VALUE || n > MAX_VALUE) {
-      return { ok: false, error: `Values must be integers from ${MIN_VALUE} to ${MAX_VALUE}.` };
-    }
-    if (seen.has(n)) {
-      return { ok: false, error: `"${n}" is repeated — BST values must be unique.` };
-    }
-    seen.add(n);
-    values.push(n);
-  }
-  return { ok: true, values };
-}
+const { minSize: MIN_SIZE, maxSize: MAX_SIZE, minValue: MIN_VALUE, maxValue: MAX_VALUE } =
+  TREE_LIMITS;
 
 export function TreeControls({
   isPlaying,
@@ -80,7 +51,7 @@ export function TreeControls({
 
   const handleApply = () => {
     const raw = valuesRef.current?.value ?? "";
-    const result = parseValues(raw);
+    const result = parseIntList(raw, TREE_LIMITS);
     if (!result.ok) {
       setError(result.error);
       return;
