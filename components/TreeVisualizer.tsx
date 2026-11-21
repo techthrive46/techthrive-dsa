@@ -12,6 +12,8 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { TreeControls } from "@/components/TreeControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { TutorPanel } from "@/components/tutor/TutorPanel";
+import { treeInput } from "@/lib/tutor/agent";
 import { TREES_CODE } from "@/lib/code/trees";
 import { TREE_LIMITS, intFromParam, intListFromParam } from "@/lib/inputs";
 
@@ -145,6 +147,32 @@ function TreeVisualizerInner({
         needsTarget={meta.needsTarget}
         target={player.target}
         onApply={player.apply}
+      />
+
+      <TutorPanel
+        context={{
+          topic: "Trees",
+          algorithmName: meta.name,
+          input: `BST built by inserting [${player.values.join(", ")}] in order${meta.needsTarget && player.target !== null ? `, target = ${player.target}` : ""}`,
+          pseudocode: meta.pseudocode,
+          code: TREES_CODE[opKey],
+          stepIndex: player.currentIndex,
+          totalSteps: player.totalFrames,
+          frame: frame,
+          previousCaption: player.frames[player.currentIndex - 1]?.caption,
+        }}
+        agent={{
+          frames: player.frames,
+          goTo: player.goTo,
+          play: player.play,
+          pause: player.pause,
+          setSpeed: player.setSpeed,
+          input: treeInput(
+            player.apply,
+            () => ({ values: player.values, target: player.target }),
+            meta.needsTarget,
+          ),
+        }}
       />
 
       <AlgorithmInfoCard

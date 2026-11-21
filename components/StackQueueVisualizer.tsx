@@ -18,6 +18,8 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { StackQueueControls } from "@/components/StackQueueControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { TutorPanel } from "@/components/tutor/TutorPanel";
+import { scriptInput } from "@/lib/tutor/agent";
 import { STACKS_QUEUES_CODE } from "@/lib/code/stacksQueues";
 import { scriptFromParam } from "@/lib/inputs";
 
@@ -109,6 +111,28 @@ function StackQueueVisualizerInner({
         onRandomize={player.randomize}
         script={player.script}
         onSetScript={player.setScript}
+      />
+
+      <TutorPanel
+        context={{
+          topic: "Stacks & Queues",
+          algorithmName: meta.name,
+          input: `operations: ${scriptToText(structureKey, player.script)}`,
+          pseudocode: meta.pseudocode,
+          code: STACKS_QUEUES_CODE[structureKey],
+          stepIndex: player.currentIndex,
+          totalSteps: player.totalFrames,
+          frame: frame,
+          previousCaption: player.frames[player.currentIndex - 1]?.caption,
+        }}
+        agent={{
+          frames: player.frames,
+          goTo: player.goTo,
+          play: player.play,
+          pause: player.pause,
+          setSpeed: player.setSpeed,
+          input: scriptInput(structureKey, player.setScript),
+        }}
       />
 
       <AlgorithmInfoCard

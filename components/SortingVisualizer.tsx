@@ -14,6 +14,8 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { TutorPanel } from "@/components/tutor/TutorPanel";
+import { sortingInput } from "@/lib/tutor/agent";
 import { SORTING_CODE } from "@/lib/code/sorting";
 import { ARRAY_LIMITS, intListFromParam } from "@/lib/inputs";
 
@@ -129,6 +131,28 @@ function SortingVisualizerInner({
         onRandomize={player.randomize}
         onSetArray={player.setArray}
         defaultArrayText={player.array.join(", ")}
+      />
+
+      <TutorPanel
+        context={{
+          topic: "Sorting",
+          algorithmName: algo.name,
+          input: `array = [${player.array.join(", ")}]`,
+          pseudocode: algo.pseudocode,
+          code: SORTING_CODE[algoKey],
+          stepIndex: player.currentIndex,
+          totalSteps: player.totalFrames,
+          frame: player.currentFrame,
+          previousCaption: player.frames[player.currentIndex - 1]?.caption,
+        }}
+        agent={{
+          frames: player.frames,
+          goTo: player.goTo,
+          play: player.play,
+          pause: player.pause,
+          setSpeed: player.setSpeed,
+          input: sortingInput(player.setArray),
+        }}
       />
 
       <AlgorithmInfoCard

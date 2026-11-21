@@ -14,6 +14,8 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { RecursionControls } from "@/components/RecursionControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { TutorPanel } from "@/components/tutor/TutorPanel";
+import { recursionInput } from "@/lib/tutor/agent";
 import { RECURSION_CODE } from "@/lib/code/recursion";
 import { paramsFromParam } from "@/lib/inputs";
 
@@ -120,6 +122,28 @@ function RecursionVisualizerInner({
         maxParams={algo.maxParams}
         onSetParams={player.setParams}
         hint={hint}
+      />
+
+      <TutorPanel
+        context={{
+          topic: "Recursion",
+          algorithmName: algo.name,
+          input: algo.paramLabels.map((label, i) => `${label} = ${player.params[i]}`).join(", "),
+          pseudocode: algo.pseudocode,
+          code: RECURSION_CODE[algoKey],
+          stepIndex: player.currentIndex,
+          totalSteps: player.totalFrames,
+          frame: frame,
+          previousCaption: player.frames[player.currentIndex - 1]?.caption,
+        }}
+        agent={{
+          frames: player.frames,
+          goTo: player.goTo,
+          play: player.play,
+          pause: player.pause,
+          setSpeed: player.setSpeed,
+          input: recursionInput(algo.paramLabels, algo.minParams, algo.maxParams, player.setParams),
+        }}
       />
 
       <AlgorithmInfoCard
