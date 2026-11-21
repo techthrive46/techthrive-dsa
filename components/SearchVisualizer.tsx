@@ -1,5 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useUrlSync } from "@/hooks/useUrlSync";
+import { ShareLinkButton } from "@/components/ShareLinkButton";
 import Link from "next/link";
 import {
   MAX_TARGET,
@@ -13,18 +17,46 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { SEARCHING_CODE } from "@/lib/code/searching";
+import { ARRAY_LIMITS, intFromParam, intListFromParam } from "@/lib/inputs";
 
 type SearchVisualizerProps = {
   algoKey: SearchAlgoKey;
 };
 
 export function SearchVisualizer({ algoKey }: SearchVisualizerProps) {
-  return <SearchVisualizerInner key={algoKey} algoKey={algoKey} />;
+  // The prerendered HTML shows the default run; a shared link's input
+  // (?arr=…&target=…) is read on the client, inside this boundary.
+  return (
+    <Suspense fallback={<SearchVisualizerInner key={algoKey} algoKey={algoKey} />}>
+      <SearchVisualizerFromUrl key={algoKey} algoKey={algoKey} />
+    </Suspense>
+  );
 }
 
-function SearchVisualizerInner({ algoKey }: { algoKey: SearchAlgoKey }) {
+function SearchVisualizerFromUrl({ algoKey }: { algoKey: SearchAlgoKey }) {
+  const searchParams = useSearchParams();
+  return (
+    <SearchVisualizerInner
+      algoKey={algoKey}
+      initialArray={intListFromParam(searchParams.get("arr"), ARRAY_LIMITS)}
+      initialTarget={intFromParam(searchParams.get("target"), MIN_TARGET, MAX_TARGET)}
+    />
+  );
+}
+
+function SearchVisualizerInner({
+  algoKey,
+  initialArray,
+  initialTarget,
+}: {
+  algoKey: SearchAlgoKey;
+  initialArray?: number[];
+  initialTarget?: number;
+}) {
   const algo = SEARCH_ALGOS[algoKey];
-  const player = useSearchPlayer({ algo: algoKey });
+  const player = useSearchPlayer({ algo: algoKey, initialArray, initialTarget });
+  useUrlSync({ arr: player.array.join(","), target: String(player.target) });
   const frame = player.currentFrame;
 
   const result =
@@ -44,7 +76,10 @@ function SearchVisualizerInner({ algoKey }: { algoKey: SearchAlgoKey }) {
           >
             ← All searching algorithms
           </Link>
-          <h1 className="heading-slab mt-1 text-3xl sm:text-4xl">{algo.name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <h1 className="heading-slab text-3xl sm:text-4xl">{algo.name}</h1>
+            <ShareLinkButton />
+          </div>
         </div>
         <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
           <Legend color="var(--bar-compare)" label="Checking" />
@@ -55,7 +90,11 @@ function SearchVisualizerInner({ algoKey }: { algoKey: SearchAlgoKey }) {
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <SearchCanvas frame={frame} pointerLabel={algo.pointerLabel} />
-        <PseudocodePanel pseudocode={algo.pseudocode} line={frame.line} />
+        <PseudocodePanel
+          pseudocode={algo.pseudocode}
+          line={frame.line}
+          code={SEARCHING_CODE[algoKey]}
+        />
       </div>
 
       <FrameCaption

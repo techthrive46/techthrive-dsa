@@ -1,23 +1,14 @@
 import Link from "next/link";
+import { NavLinks } from "@/components/NavLinks";
 
 export function SiteNav() {
   return (
     <header className="border-b border-dashed border-border">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <Link href="/" className="heading-slab text-xl">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">
+        <Link href="/" className="heading-slab shrink-0 text-xl">
           AlgoThrive
         </Link>
-        <nav className="flex items-center gap-6 text-sm font-bold">
-          <Link href="/sorting" className="transition-colors hover:text-primary">
-            Sorting
-          </Link>
-          <Link href="/searching" className="transition-colors hover:text-primary">
-            Searching
-          </Link>
-          <Link href="/#topics" className="transition-colors hover:text-primary">
-            Topics
-          </Link>
-        </nav>
+        <NavLinks />
       </div>
     </header>
   );

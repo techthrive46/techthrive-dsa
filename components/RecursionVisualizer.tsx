@@ -1,5 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useUrlSync } from "@/hooks/useUrlSync";
+import { ShareLinkButton } from "@/components/ShareLinkButton";
 import Link from "next/link";
 import { RECURSION_ALGOS, type RecursionAlgoKey } from "@/lib/recursion";
 import { useRecursionPlayer } from "@/hooks/useRecursionPlayer";
@@ -10,18 +14,44 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { RecursionControls } from "@/components/RecursionControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { RECURSION_CODE } from "@/lib/code/recursion";
+import { paramsFromParam } from "@/lib/inputs";
 
 type RecursionVisualizerProps = {
   algoKey: RecursionAlgoKey;
 };
 
 export function RecursionVisualizer({ algoKey }: RecursionVisualizerProps) {
-  return <RecursionVisualizerInner key={algoKey} algoKey={algoKey} />;
+  // The prerendered HTML shows the default run; a shared link's input
+  // (?args=…) is read on the client, inside this boundary.
+  return (
+    <Suspense fallback={<RecursionVisualizerInner key={algoKey} algoKey={algoKey} />}>
+      <RecursionVisualizerFromUrl key={algoKey} algoKey={algoKey} />
+    </Suspense>
+  );
 }
 
-function RecursionVisualizerInner({ algoKey }: { algoKey: RecursionAlgoKey }) {
+function RecursionVisualizerFromUrl({ algoKey }: { algoKey: RecursionAlgoKey }) {
+  const searchParams = useSearchParams();
   const algo = RECURSION_ALGOS[algoKey];
-  const player = useRecursionPlayer({ algo: algoKey });
+  const initialParams = paramsFromParam(
+    searchParams.get("args"),
+    algo.minParams,
+    algo.maxParams,
+  );
+  return <RecursionVisualizerInner algoKey={algoKey} initialParams={initialParams} />;
+}
+
+function RecursionVisualizerInner({
+  algoKey,
+  initialParams,
+}: {
+  algoKey: RecursionAlgoKey;
+  initialParams?: number[];
+}) {
+  const algo = RECURSION_ALGOS[algoKey];
+  const player = useRecursionPlayer({ algo: algoKey, initialParams });
+  useUrlSync({ args: player.params.join(",") });
   const frame = player.currentFrame;
 
   const hint = algo.paramLabels
@@ -38,7 +68,10 @@ function RecursionVisualizerInner({ algoKey }: { algoKey: RecursionAlgoKey }) {
           >
             ← All recursion topics
           </Link>
-          <h1 className="heading-slab mt-1 text-3xl sm:text-4xl">{algo.name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <h1 className="heading-slab text-3xl sm:text-4xl">{algo.name}</h1>
+            <ShareLinkButton />
+          </div>
         </div>
         <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
           <Legend color="var(--bar-compare)" label="Active" />
@@ -52,7 +85,11 @@ function RecursionVisualizerInner({ algoKey }: { algoKey: RecursionAlgoKey }) {
         ) : (
           <CallStackCanvas stack={frame.stack} />
         )}
-        <PseudocodePanel pseudocode={algo.pseudocode} line={frame.line} />
+        <PseudocodePanel
+          pseudocode={algo.pseudocode}
+          line={frame.line}
+          code={RECURSION_CODE[algoKey]}
+        />
       </div>
 
       {algo.hasTree && frame.tree ? <CallTreeCanvas tree={frame.tree} /> : null}

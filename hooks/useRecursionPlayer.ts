@@ -10,11 +10,12 @@ import { useFramePlayer } from "@/hooks/useFramePlayer";
 
 type UseRecursionPlayerOptions = {
   algo: RecursionAlgoKey;
+  initialParams?: number[];
 };
 
-export function useRecursionPlayer({ algo }: UseRecursionPlayerOptions) {
+export function useRecursionPlayer({ algo, initialParams }: UseRecursionPlayerOptions) {
   const meta = RECURSION_ALGOS[algo];
-  const [params, setParamsState] = useState<number[]>(meta.defaultParams);
+  const [params, setParamsState] = useState<number[]>(initialParams ?? meta.defaultParams);
   const frames = useMemo(() => buildRecursionFrames(algo, params), [algo, params]);
   const player = useFramePlayer(frames);
   const { reset } = player;

@@ -1,5 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useUrlSync } from "@/hooks/useUrlSync";
+import { ShareLinkButton } from "@/components/ShareLinkButton";
 import Link from "next/link";
 import { ALGOS, type AlgoKey } from "@/lib/sorting";
 import { usePlayer } from "@/hooks/usePlayer";
@@ -10,18 +14,39 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { SORTING_CODE } from "@/lib/code/sorting";
+import { ARRAY_LIMITS, intListFromParam } from "@/lib/inputs";
 
 type SortingVisualizerProps = {
   algoKey: AlgoKey;
 };
 
 export function SortingVisualizer({ algoKey }: SortingVisualizerProps) {
-  return <SortingVisualizerInner key={algoKey} algoKey={algoKey} />;
+  // The prerendered HTML shows the default run; a shared link's input
+  // (?arr=…) is read on the client, inside this boundary.
+  return (
+    <Suspense fallback={<SortingVisualizerInner key={algoKey} algoKey={algoKey} />}>
+      <SortingVisualizerFromUrl key={algoKey} algoKey={algoKey} />
+    </Suspense>
+  );
 }
 
-function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
+function SortingVisualizerFromUrl({ algoKey }: { algoKey: AlgoKey }) {
+  const searchParams = useSearchParams();
+  const initialArray = intListFromParam(searchParams.get("arr"), ARRAY_LIMITS);
+  return <SortingVisualizerInner algoKey={algoKey} initialArray={initialArray} />;
+}
+
+function SortingVisualizerInner({
+  algoKey,
+  initialArray,
+}: {
+  algoKey: AlgoKey;
+  initialArray?: number[];
+}) {
   const algo = ALGOS[algoKey];
-  const player = usePlayer({ algo: algoKey });
+  const player = usePlayer({ algo: algoKey, initialArray });
+  useUrlSync({ arr: player.array.join(",") });
   const tree = player.currentFrame.tree;
 
   return (
@@ -34,7 +59,10 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
           >
             ← All sorting algorithms
           </Link>
-          <h1 className="heading-slab mt-1 text-3xl sm:text-4xl">{algo.name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <h1 className="heading-slab text-3xl sm:text-4xl">{algo.name}</h1>
+            <ShareLinkButton />
+          </div>
         </div>
         <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
           {tree?.kind === "merge" ? (
@@ -75,6 +103,7 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
         <PseudocodePanel
           pseudocode={algo.pseudocode}
           line={player.currentFrame.line}
+          code={SORTING_CODE[algoKey]}
         />
       </div>
 
@@ -99,6 +128,7 @@ function SortingVisualizerInner({ algoKey }: { algoKey: AlgoKey }) {
         onSpeedChange={player.setSpeed}
         onRandomize={player.randomize}
         onSetArray={player.setArray}
+        defaultArrayText={player.array.join(", ")}
       />
 
       <AlgorithmInfoCard

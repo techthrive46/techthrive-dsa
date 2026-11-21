@@ -12,11 +12,12 @@ import { useFramePlayer } from "@/hooks/useFramePlayer";
 
 type UseStackQueuePlayerOptions = {
   structure: StructureKey;
+  initialScript?: Operation[];
 };
 
-export function useStackQueuePlayer({ structure }: UseStackQueuePlayerOptions) {
+export function useStackQueuePlayer({ structure, initialScript }: UseStackQueuePlayerOptions) {
   const meta = STRUCTURES[structure];
-  const [script, setScriptState] = useState<Operation[]>(meta.defaultScript);
+  const [script, setScriptState] = useState<Operation[]>(initialScript ?? meta.defaultScript);
   const frames = useMemo(
     () => buildStructureFrames(structure, script),
     [structure, script],
