@@ -55,6 +55,15 @@ export function useFramePlayer<T>(frames: T[]) {
     setIsPlaying(true);
   }, [frames.length]);
 
+  /** Jumps straight to a frame (clamped) and pauses there. */
+  const goTo = useCallback(
+    (index: number) => {
+      pause();
+      setCurrentIndex(Math.min(Math.max(0, Math.round(index)), Math.max(0, frames.length - 1)));
+    },
+    [pause, frames.length],
+  );
+
   const reset = useCallback(() => {
     pause();
     setCurrentIndex(0);
@@ -92,6 +101,7 @@ export function useFramePlayer<T>(frames: T[]) {
     pause,
     stepForward,
     stepBackward,
+    goTo,
     reset,
     setSpeed,
   };

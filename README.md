@@ -53,6 +53,30 @@ Each visualizer writes its input into the URL, and **Copy link** copies it, so a
 
 Invalid or out-of-range values are ignored and the default input is used.
 
+### AI tutor (optional)
+
+On every visualizer, an **Ask AI tutor** button floats in the bottom-right corner. It opens a popup over the page (a bottom sheet on phones) where a student can pause on any step and ask about it ("Why did 9 and 4 swap?"). It runs on the student's **own free Gemini API key** from [Google AI Studio](https://aistudio.google.com/apikey). The site works fully without one.
+
+- **A popup, not a page section:** there's no backdrop, so the playback controls stay clickable while it's open. Escape or the ✕ closes it. Closing doesn't lose anything: the chat is kept, and an answer in progress keeps streaming. A dot on the button shows that the tutor is working or has a new answer.
+
+- **Grounded answers:** each question is sent with the step on screen: caption, the pseudocode line running, the highlighted lines in the code tab being viewed, and the step's data as JSON. Follow-up questions include the last few messages.
+- **It acts, not just answers.** The tutor is an agent using Gemini function calling. It can:
+  - jump to a step (`go_to_step`)
+  - search the steps for moments like "swap" or "found" (`find_steps`)
+  - play or pause the animation
+  - load a new input (`set_input`), validated by the same rules as the input boxes
+  - switch the code tab (`show_code`)
+  - open another algorithm, optionally with an input (`open_algorithm`)
+
+  Each action appears in the chat as it happens. After an action, the agent receives the new step's state and explains it. If it opens another page, the conversation carries over and the answer continues there.
+- **The agent loop** runs up to 6 act → observe rounds per question. Each model turn, including its `thoughtSignature` parts, is sent back exactly as received, which newer Gemini models require. Tools and input loaders are in `lib/tutor/agent.ts`.
+- **No backend:** the browser calls Google's API directly. The key is stored in `localStorage` under `algothrive:tutor` and is sent only to Google, in the `x-goog-api-key` header.
+- **Model choice:** when a key is connected, the app lists the models it can use and picks the first stable Flash-Lite / Flash model that answers. Nothing is hardcoded, because Gemini model names change often.
+- **Answer language:** English, Tenglish or Telugu.
+- **Clear errors:** messages for an invalid key, the free-tier limit (with a retry time), a model that's no longer available, and network failures.
+
+The code is in `lib/tutor/` (API client and prompt) and `components/tutor/` (panel, key setup, Markdown renderer).
+
 ## Project layout
 
 - `app/` — routes; each topic has an index page and a `[slug]` page per algorithm

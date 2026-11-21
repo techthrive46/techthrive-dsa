@@ -17,6 +17,8 @@ import { FrameCaption } from "@/components/StepNarration";
 import { PseudocodePanel } from "@/components/PseudocodePanel";
 import { PlaybackControls } from "@/components/PlaybackControls";
 import { AlgorithmInfoCard } from "@/components/AlgorithmInfoCard";
+import { TutorPanel } from "@/components/tutor/TutorPanel";
+import { searchingInput } from "@/lib/tutor/agent";
 import { SEARCHING_CODE } from "@/lib/code/searching";
 import { ARRAY_LIMITS, intFromParam, intListFromParam } from "@/lib/inputs";
 
@@ -150,6 +152,28 @@ function SearchVisualizerInner({
           </p>
         </div>
       </PlaybackControls>
+
+      <TutorPanel
+        context={{
+          topic: "Searching",
+          algorithmName: algo.name,
+          input: `array = [${player.array.join(", ")}], target = ${player.target}`,
+          pseudocode: algo.pseudocode,
+          code: SEARCHING_CODE[algoKey],
+          stepIndex: player.currentIndex,
+          totalSteps: player.totalFrames,
+          frame: frame,
+          previousCaption: player.frames[player.currentIndex - 1]?.caption,
+        }}
+        agent={{
+          frames: player.frames,
+          goTo: player.goTo,
+          play: player.play,
+          pause: player.pause,
+          setSpeed: player.setSpeed,
+          input: searchingInput(player.setArray, player.setTarget, algo.needsSorted),
+        }}
+      />
 
       <AlgorithmInfoCard
         name={algo.name}
